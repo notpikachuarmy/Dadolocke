@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0b3d2e">
+  <title>Dadolocke</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="felt">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">EL DADO MANDA</p>
+        <h1>🎲 DADOLOCKE</h1>
+      </div>
+      <div class="top-actions">
+        <button id="soundToggle" class="small-btn" title="Activar/desactivar sonido">🔊 Sonido</button>
+        <button id="resetBtn" class="small-btn danger">Reiniciar</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero panel">
+        <div class="hero-copy">
+          <h2>Tu partida. Tu suerte. Cero excusas.</h2>
+          <p>Llega a una ruta nueva y deja que el dado decida tu destino.</p>
+        </div>
+        <button id="startBtn" class="main-btn">🎲 Tirar desde 0</button>
+      </section>
+
+      <section class="current panel">
+        <div class="section-title">
+          <h2>Tirada actual</h2>
+          <span id="stageLabel" class="badge">Preparado</span>
+        </div>
+        <div id="diceStack" class="dice-stack">
+          <div class="empty-state">
+            <div class="big-die">🎲</div>
+            <p>Cuando tires, cada resultado aparecerá aquí y los anteriores quedarán debajo.</p>
+          </div>
+        </div>
+        <div id="actionArea" class="action-area"></div>
+      </section>
+
+      <section class="panel rules-summary">
+        <div class="section-title">
+          <h2>Secuencia</h2>
+        </div>
+        <div class="sequence">
+          <span>🟢/🔴 Destino</span><b>→</b>
+          <span>🎲 Tema</span><b>→</b>
+          <span>🎯 Resultado</span><b>→</b>
+          <span>⏱️ Duración*</span><b>→</b>
+          <span>🎰 Apuesta*</span>
+        </div>
+        <p class="muted">* Solo cuando el resultado tenga duración o permita apostar.</p>
+      </section>
+
+      <section class="panel history-panel">
+        <div class="section-title">
+          <h2>Historial</h2>
+          <span id="historyCount" class="badge">0 tiradas</span>
+        </div>
+        <div id="historyList" class="history-list">
+          <div class="empty-state compact">Todavía no hay tiradas.</div>
+        </div>
+      </section>
+
+      <section class="panel stats-panel">
+        <div class="section-title">
+          <h2>Estadísticas</h2>
+        </div>
+        <div class="stats-tabs">
+          <button class="tab active" data-tab="normal">Tiradas normales</button>
+          <button class="tab" data-tab="chaos">Caos</button>
+        </div>
+        <div id="statsContent"></div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Dadolocke · Guarda la partida automáticamente en este navegador.</span>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
