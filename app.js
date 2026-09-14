@@ -12,7 +12,8 @@ let S=load(),P=null,sound=true,ctx=null,tab='normal';
 const r6=()=>Math.floor(Math.random()*6)+1;
 function snd(){if(!sound)return;try{ctx??=new(window.AudioContext||window.webkitAudioContext)();let t=ctx.currentTime;for(let i=0;i<4;i++){let o=ctx.createOscillator(),g=ctx.createGain();o.type='triangle';o.frequency.value=180+Math.random()*180;g.gain.setValueAtTime(.001,t+i*.07);g.gain.exponentialRampToValueAtTime(.08,t+i*.07+.01);g.gain.exponentialRampToValueAtTime(.001,t+i*.07+.07);o.connect(g);g.connect(ctx.destination);o.start(t+i*.07);o.stop(t+i*.07+.08)}}catch{}}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch{}}
-function dur(){let n=r6();return{roll:n,value:n<3?'1 combate o ruta':n<5?'3 combates o rutas':n===5?'5 combates o rutas':'Hasta el próximo combate importante (líder, rival, ejecutivo o líder villano) o hasta la próxima ciudad'}}
+function durationUnit(){return ['regla','pokemon'].includes(P.cat)?'ruta':'combate'}
+function dur(){let n=r6(),u=durationUnit();let value=n<3?'1 '+u:n<5?'3 '+u:n===5?'5 '+u:(u==='ruta'?'Hasta la próxima ciudad':'Hasta el próximo combate importante (líder, rival, ejecutivo o líder villano)');return{roll:n,value,unit:u}}
 function all(){let a=[];for(const c of Object.keys(E))for(const al of ['positive','negative'])for(const e of (E[c][al]||[]))a.push({c,al,e});return a}
 function begin(){P={phase:'align',steps:[],chaos:false};S.current=null;save();roll();}
 function roll(){
@@ -33,7 +34,7 @@ function roll(){
    if(!pool.length){P.phase='cat';P.cat='regla';P.al='positive';P.e=E.regla.positive[0];afterEffect();}
    else {x=pool[Math.floor(Math.random()*pool.length)];P.e=x.e;P.cat=x.c;P.al=x.al;P.chaos=true;P.steps.push({t:'chaosResult',v:x});afterEffect();}
   } else if(P.phase==='duration'){
-   P.d=dur();P.steps.push({t:'duration',n:P.d.roll,v:P.d.value});afterDuration();
+   P.d=dur();P.steps.push({t:'duration',n:P.d.roll,v:P.d.value,unit:P.d.unit});afterDuration();
   } else if(P.phase==='gamble'){
    n=r6();P.g=n;P.gr=n<=2?'Pierdes el premio':n<=4?'No ocurre nada':'Duplicas la recompensa';P.steps.push({t:'gamble',n,v:P.gr});finish();return;
   } else { // never leave a dead phase
@@ -57,21 +58,22 @@ function current(){
  if(P){
   st.innerHTML=(P.steps||[]).map((s,i)=>{let t='',v='',cl='',desc='';
    if(s.t==='align'){t='Destino';v=s.v==='positive'?'POSITIVO':'NEGATIVO';cl=s.v}
-   else if(s.t==='cat'){t='Tema';v=C[s.v]?.[1]||s.v}
+   else if(s.t==='cat'){t='Tema';v=C[s.v]?.[1]||s.v;desc=s.v==='regla'?'DADO REGLA · POR RUTA':s.v==='combate'?'DADO DE COMBATE · POR COMBATE':s.v==='recursos'?'DADO DE RECURSOS · POR COMBATE':s.v==='pokemon'?'DADO POKÉMON · POR RUTA':''}
    else if(s.t==='effect'){t='Resultado';v=s.v[0];desc=s.v[1]}
-   else if(s.t==='duration'){t='Duración';v=s.v}
-   else if(s.t==='chaosResult'){t='Resultado de Caos';v=(s.v.al==='positive'?'POSITIVO':'NEGATIVO')+' · '+(C[s.v.c]?.[1]||s.v.c)+' → '+s.v.e[0];desc=s.v.e[1];cl=s.v.al}
+   else if(s.t==='duration'){t='Duración';v=s.v;desc='SE APLICA POR '+(s.unit==='ruta'?'RUTA':'COMBATE')}
+   else if(s.t==='chaosResult'){t='Resultado de Caos';let unit=['regla','pokemon'].includes(s.v.c)?'POR RUTA':'POR COMBATE';v=(s.v.al==='positive'?'POSITIVO':'NEGATIVO')+' · '+(C[s.v.c]?.[1]||s.v.c)+' · '+unit+' → '+s.v.e[0];desc=s.v.e[1];cl=s.v.al}
    else if(s.t==='gamble'){t='Apuesta';v=s.n+' → '+s.v;cl=s.n>=5?'positive':s.n<=2?'negative':''}
    return `<div class="die-card ${i===P.steps.length-1?'latest':''}"><div class="die-icon"></div><div><div class="die-title">${esc(t)}</div><div class="die-value ${cl}">${esc(v)}</div>${desc?`<div class="history-details result-inline">${esc(desc)}</div>`:''}</div><div class="die-number">${s.n??''}</div></div>`
   }).join('');
   lab.textContent=P.phase==='gamblePrompt'?'¿Te la juegas?':P.phase==='chaosPrompt'?'Caos listo':P.phase==='duration'?'Duración':P.phase==='gamble'?'Apuesta':'En curso';
   const desc=P.e?`<div class="result-explanation"><strong>¿Qué hace?</strong><span>${esc(P.e[1])}</span></div>`:'';
-  if(P.phase==='chaosPrompt')a.innerHTML=`<div class="action-card"><strong>CAOS</strong><span>El Caos elegirá un resultado aleatorio entre todas las opciones positivas y negativas.</span><div class="action-buttons"><button class="main-btn" onclick="resolveChaos()">Resolver Caos</button></div></div>`;
-  else if(P.phase==='duration')a.innerHTML=desc+`<button class="main-btn" onclick="roll()">Tirar duración</button>`;
-  else if(P.phase==='gamblePrompt')a.innerHTML=desc+`<div class="action-card"><strong>¿Te la juegas?</strong><span>El resultado${P.d?' y su duración':''} ya está visible. Puedes quedarte el premio o arriesgarlo.</span><div class="action-buttons"><button class="btn-muted" onclick="gamble('no')">Quedarme el premio</button><button class="btn-gold" onclick="gamble('yes')">Arriesgar</button></div></div>`;
+  const scope=P.chaos?'DADO CAOS · '+(P.cat==='regla'?'RESULTADO DE REGLA · POR RUTA':P.cat==='combate'?'RESULTADO DE COMBATE · POR COMBATE':P.cat==='recursos'?'RESULTADO DE RECURSOS · POR COMBATE':P.cat==='pokemon'?'RESULTADO POKÉMON · POR RUTA':'SEGÚN EL RESULTADO'):P.cat==='regla'?'DADO REGLA · POR RUTA':P.cat==='combate'?'DADO DE COMBATE · POR COMBATE':P.cat==='recursos'?'DADO DE RECURSOS · POR COMBATE':P.cat==='pokemon'?'DADO POKÉMON · POR RUTA':'';
+  if(P.phase==='chaosPrompt')a.innerHTML=`<div class="action-card"><strong>DADO CAOS</strong><span>El Caos elegirá un resultado aleatorio entre todas las opciones positivas y negativas.</span><div class="action-buttons"><button class="main-btn" onclick="resolveChaos()">Resolver Caos</button></div></div>`;
+  else if(P.phase==='duration')a.innerHTML=`<div class="scope-badge">${esc(scope)}</div>`+desc+`<button class="main-btn" onclick="roll()">Tirar duración</button>`;
+  else if(P.phase==='gamblePrompt')a.innerHTML=`<div class="scope-badge">${esc(scope)}</div>`+desc+`<div class="action-card"><strong>¿Te la juegas?</strong><span>El resultado${P.d?' y su duración':''} ya está visible. Puedes quedarte el premio o arriesgarlo.</span><div class="action-buttons"><button class="btn-muted" onclick="gamble('no')">Quedarme el premio</button><button class="btn-gold" onclick="gamble('yes')">Arriesgar</button></div></div>`;
   else if(P.phase==='gamble')a.innerHTML=desc;
-  else a.innerHTML=desc+`<button class="main-btn" onclick="roll()">Tirar siguiente dado</button>`;
- } else if(S.current){const h=S.current;st.innerHTML=`<div class="die-card latest"><div class="die-icon"></div><div><div class="die-title">Resultado final</div><div class="die-value ${h.positive?'positive':'negative'}">${esc(h.effect?.[0]||'Resultado')}</div><div class="history-details result-inline">${esc(h.effect?.[1]||'')}</div></div><div class="die-number">${h.chaos?'CAOS':''}</div></div>`;a.innerHTML=`<div class="action-card">${h.duration?'<div>Duración: '+esc(h.duration.value)+'</div>':''}${h.gambleResult?'<div>Apuesta: '+esc(h.gambleResult)+'</div>':''}<button class="main-btn" onclick="begin()">Tirar desde 0</button></div>`;lab.textContent='Resultado completado';
+  else a.innerHTML=(scope?`<div class="scope-badge">${esc(scope)}</div>`:'')+desc+`<button class="main-btn" onclick="roll()">Tirar siguiente dado</button>`;
+ } else if(S.current){const h=S.current;st.innerHTML=`<div class="die-card latest"><div class="die-icon"></div><div><div class="die-title">Resultado final</div><div class="scope-badge">${esc(h.chaos?'DADO CAOS · '+(h.category==='regla'?'RESULTADO DE REGLA · POR RUTA':h.category==='combate'?'RESULTADO DE COMBATE · POR COMBATE':h.category==='recursos'?'RESULTADO DE RECURSOS · POR COMBATE':'RESULTADO POKÉMON · POR RUTA'):(h.category==='regla'?'DADO REGLA · POR RUTA':h.category==='combate'?'DADO DE COMBATE · POR COMBATE':h.category==='recursos'?'DADO DE RECURSOS · POR COMBATE':'DADO POKÉMON · POR RUTA'))}</div><div class="die-value ${h.positive?'positive':'negative'}">${esc(h.effect?.[0]||'Resultado')}</div><div class="history-details result-inline">${esc(h.effect?.[1]||'')}</div></div><div class="die-number">${h.chaos?'CAOS':''}</div></div>`;a.innerHTML=`<div class="action-card">${h.duration?'<div>Duración: '+esc(h.duration.value)+'</div>':''}${h.gambleResult?'<div>Apuesta: '+esc(h.gambleResult)+'</div>':''}<button class="main-btn" onclick="begin()">Tirar desde 0</button></div>`;lab.textContent='Resultado completado';
  } else {st.innerHTML='<div class="empty-state"><div class="big-die"></div><p>Los dados aparecerán aquí en orden.</p></div>';a.innerHTML='<button class="main-btn" onclick="begin()">Tirar desde 0</button>';lab.textContent='Preparado'}
 }
 function history(){const l=document.querySelector('#history'),cnt=document.querySelector('#historyCount');cnt.textContent=S.history.length+' tiradas';if(!S.history.length){l.innerHTML='<div class="empty-state compact">Todavía no hay tiradas.</div>';return}l.innerHTML=S.history.map((h,i)=>`<article class="history-item"><div class="history-head"><strong>#${S.history.length-i} · ${new Date(h.date).toLocaleString('es-ES',{dateStyle:'short',timeStyle:'short'})}</strong><span class="pill ${h.chaos?'chaos':h.positive?'good':'bad'}">${h.chaos?'CAOS':h.positive?'POSITIVO':'NEGATIVO'}</span></div><div class="history-main"><span class="pill">${esc(C[h.category]?.[1]||h.category||'')}</span><span class="pill">${esc(h.effect?.[0]||'')}</span>${h.duration?'<span class="pill">'+esc(h.duration.value)+'</span>':''}${h.gambleResult?'<span class="pill">'+esc(h.gambleResult)+'</span>':''}</div><div class="history-details">${esc(h.effect?.[1]||'')}</div><div class="history-actions"><button class="complete-btn ${h.done?'completed':''}" onclick="toggleDone('${h.id}')">${h.done?'Completado':'Marcar completado'}</button><button class="delete-btn" onclick="delH('${h.id}')">Borrar</button></div></article>`).join('')}

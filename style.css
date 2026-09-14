@@ -5,3 +5,4 @@
 .result-explanation span{color:var(--cream);line-height:1.45}
 
 .result-inline{margin-top:5px;line-height:1.35}.die-icon:empty{display:none}.die-card:has(.die-icon:empty){grid-template-columns:1fr auto}
+.scope-badge{display:inline-block;margin:.35rem 0;padding:.25rem .55rem;border:1px solid currentColor;border-radius:999px;font-size:.72rem;font-weight:800;letter-spacing:.04em}
